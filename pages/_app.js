@@ -1,23 +1,17 @@
 // pages/_app.js
-import * as React from 'react'
-import PropTypes from 'prop-types'
-import Head from 'next/head'
-import { CssBaseline } from '@mui/material'
+import { createBrowserSupabaseClient } from '@supabase/auth-helpers-nextjs'
+import { SessionContextProvider }    from '@supabase/auth-helpers-react'
+import '../styles/globals.css'
 
 export default function MyApp({ Component, pageProps }) {
-  return (
-    <>
-      <Head>
-        <title>Job Aggregator</title>
-        <meta name="viewport" content="initial-scale=1, width=device-width" />
-      </Head>
-      <CssBaseline />
-      <Component {...pageProps} />
-    </>
-  )
-}
+  const supabase = createBrowserSupabaseClient()
 
-MyApp.propTypes = {
-  Component: PropTypes.elementType.isRequired,
-  pageProps: PropTypes.object.isRequired,
+  return (
+    <SessionContextProvider
+      supabaseClient={supabase}
+      initialSession={pageProps.initialSession}
+    >
+      <Component {...pageProps} />
+    </SessionContextProvider>
+  )
 }
