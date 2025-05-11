@@ -6,7 +6,7 @@ import { useRouter } from 'next/router'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
 import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react'
 
-// Dynamically load the Auth UI on the client only
+// Load the Auth UI only on the client
 const Auth = dynamic(
   () => import('@supabase/auth-ui-react').then((mod) => mod.Auth),
   { ssr: false }
@@ -17,21 +17,29 @@ export default function Login() {
   const session = useSession()
   const router = useRouter()
 
-  // If already logged in, send to home
+  // If there's already a session, go home
   useEffect(() => {
     if (session) {
       router.replace('/')
     }
   }, [session, router])
 
-  // Prevent any server‐side render of Auth
-  if (typeof window === 'undefined') {
-    return null
-  }
+  // Listen for the SIGNED_IN event and redirect
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, newSession) => {
+        if (event === 'SIGNED_IN') {
+          router.replace('/')
+        }
+      }
+    )
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [supabase, router])
 
-  // Your production URL – set this as a Vercel env var:
-  // NEXT_PUBLIC_APP_URL=https://job-aggregator-ui.vercel.app
-  const redirectTo = process.env.NEXT_PUBLIC_APP_URL || 'https://job-aggregator-ui.vercel.app'
+  // Prevent SSR / SSG errors
+  if (typeof window === 'undefined') return null
 
   return (
     <div
@@ -47,8 +55,6 @@ export default function Login() {
         supabaseClient={supabase}
         appearance={{ theme: ThemeSupa }}
         providers={['github']}
-        // FORCE redirect to production URL
-        redirectTo={redirectTo}
       />
     </div>
   )
