@@ -28,7 +28,7 @@ export default function Home() {
   const [scraperType, setScraperType] = useState('workday')
   const [baseUrl, setBaseUrl] = useState('')
 
-  // Redirect to /login if not authenticated
+  // Redirect to login if not authenticated, otherwise fetch jobs
   useEffect(() => {
     if (session === null) {
       router.replace('/login')
@@ -37,45 +37,52 @@ export default function Home() {
     }
   }, [session])
 
-  // While Next checks session
+  // While Supabase is determining auth state
   if (session === undefined) {
     return <div>Loading…</div>
   }
-  // If no session, render nothing (redirecting)
+  // If not logged in, don't render the page (redirect is in progress)
   if (!session) {
     return null
   }
 
-  // Fetch only non-applied, non-rejected jobs
+  // Fetch jobs that are neither applied nor rejected
   async function fetchJobs() {
     const { data, error } = await supabase
       .from('jobs')
       .select('id, title, company, location, date_posted, url')
       .eq('applied', false)
       .eq('rejected', false)
-    if (error) console.error('Error fetching jobs:', error)
-    else setJobs(data || [])
+    if (error) {
+      console.error('Error fetching jobs:', error)
+    } else {
+      setJobs(data ?? [])
+    }
   }
 
-  // Flag a job as applied
+  // Mark job as applied
   async function handleMarkApplied(id) {
     const { error } = await supabase
       .from('jobs')
       .update({ applied: true })
       .eq('id', id)
-    if (!error) setJobs(prev => prev.filter(job => job.id !== id))
+    if (!error) {
+      setJobs(prev => prev.filter(job => job.id !== id))
+    }
   }
 
-  // Flag a job as rejected
+  // Mark job as rejected
   async function handleMarkRejected(id) {
     const { error } = await supabase
       .from('jobs')
       .update({ rejected: true })
       .eq('id', id)
-    if (!error) setJobs(prev => prev.filter(job => job.id !== id))
+    if (!error) {
+      setJobs(prev => prev.filter(job => job.id !== id))
+    }
   }
 
-  // Add a new site
+  // Add a new site to scrape
   async function handleAddSite() {
     const { error } = await supabase
       .from('sites')
@@ -85,8 +92,9 @@ export default function Home() {
         scraper_type: scraperType,
         base_url: baseUrl
       })
-    if (error) console.error('Error adding site:', error)
-    else {
+    if (error) {
+      console.error('Error adding site:', error)
+    } else {
       setOpen(false)
       setSiteName('')
       setSiteUrl('')
@@ -106,7 +114,7 @@ export default function Home() {
         </a>
       )
     },
-    { field: 'company',  headerName: 'Company', flex: 1 },
+    { field: 'company', headerName: 'Company', flex: 1 },
     { field: 'location', headerName: 'Location', flex: 1 },
     {
       field: 'date_posted',
@@ -164,7 +172,7 @@ export default function Home() {
         </Box>
       </Box>
 
-      {/* DataGrid */}
+      {/* Jobs table */}
       <Box sx={{ flexGrow: 1 }}>
         <DataGrid
           rows={jobs}
@@ -230,5 +238,5 @@ export default function Home() {
         </DialogActions>
       </Dialog>
     </Box>
-  )
+)
 }
