@@ -28,7 +28,7 @@ export default function Home() {
   const [scraperType, setScraperType] = useState('workday')
   const [baseUrl, setBaseUrl] = useState('')
 
-  // Redirect to login if not authenticated, otherwise fetch jobs
+  // Redirect to login if not authenticated; otherwise fetch jobs
   useEffect(() => {
     if (session === null) {
       router.replace('/login')
@@ -41,7 +41,7 @@ export default function Home() {
   if (session === undefined) {
     return <div>Loading...</div>
   }
-  // If no session, render nothing (redirect will happen)
+  // If no session, render nothing (redirect happens)
   if (!session) {
     return null
   }
@@ -152,7 +152,7 @@ export default function Home() {
 
   return (
     <Box sx={{ height: '100vh', p: 2, display: 'flex', flexDirection: 'column' }}>
-      {/* Header with counter, Add Site and Sign Out */}
+      {/* Header with counter, Add Site, and Sign Out */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
         <Typography variant="h4">Live Job Feed</Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -189,12 +189,8 @@ export default function Home() {
           }}
           sx={{
             border: 0,
-            '& .MuiDataGrid-columnHeaders': {
-              backgroundColor: '#f5f5f5'
-            },
-            '& .MuiDataGrid-row:nth-of-type(even)': {
-              backgroundColor: '#fafafa'
-            }
+            '& .MuiDataGrid-columnHeaders': { backgroundColor: '#f5f5f5' },
+            '& .MuiDataGrid-row:nth-of-type(even)': { backgroundColor: '#fafafa' }
           }}
         />
       </Box>
@@ -236,7 +232,9 @@ export default function Home() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleAddSite}>Save</Button>
+          <Button variant="contained" onClick={handleAddSite}>
+            Save
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
