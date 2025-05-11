@@ -1,7 +1,7 @@
 // pages/index.js
 
 import { useEffect, useState } from 'react'
-import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react'
+import { useSession, useSupabaseClient } from '@supabase/ssr/react'
 import { useRouter } from 'next/router'
 import { DataGrid } from '@mui/x-data-grid'
 import {
@@ -28,7 +28,7 @@ export default function Home() {
   const [scraperType, setScraperType] = useState('workday')
   const [baseUrl, setBaseUrl] = useState('')
 
-  // Redirect if not authenticated, fetch jobs once session is ready
+  // Redirect to login if not authenticated, otherwise fetch jobs
   useEffect(() => {
     if (session === null) {
       router.replace('/login')
@@ -37,9 +37,13 @@ export default function Home() {
     }
   }, [session])
 
-  // While Supabase is checking session status
+  // While checking session
   if (session === undefined) {
     return <div>Loading...</div>
+  }
+  // If no session, render nothing (redirect will happen)
+  if (!session) {
+    return null
   }
 
   // Fetch only non-applied, non-rejected jobs
@@ -56,7 +60,7 @@ export default function Home() {
     }
   }
 
-  // Mark as applied
+  // Flag a job as applied
   async function handleMarkApplied(id) {
     const { error } = await supabase
       .from('jobs')
@@ -67,7 +71,7 @@ export default function Home() {
     }
   }
 
-  // Mark as rejected
+  // Flag a job as rejected
   async function handleMarkRejected(id) {
     const { error } = await supabase
       .from('jobs')
@@ -78,7 +82,7 @@ export default function Home() {
     }
   }
 
-  // Add a new site to scrape
+  // Add a new site
   async function handleAddSite() {
     const { error } = await supabase
       .from('sites')
@@ -99,7 +103,6 @@ export default function Home() {
     }
   }
 
-  // Column definitions for DataGrid
   const columns = [
     {
       field: 'title',
@@ -149,7 +152,7 @@ export default function Home() {
 
   return (
     <Box sx={{ height: '100vh', p: 2, display: 'flex', flexDirection: 'column' }}>
-      {/* Header with Sign Out */}
+      {/* Header with counter, Add Site and Sign Out */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
         <Typography variant="h4">Live Job Feed</Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -175,10 +178,7 @@ export default function Home() {
           rows={jobs}
           columns={columns}
           pageSize={100}
-          rowsPerPageOptions={[
-            100,
-            { value: jobs.length, label: 'All' }
-          ]}
+          rowsPerPageOptions={[100, { value: jobs.length, label: 'All' }]}
           pagination
           disableSelectionOnClick
           density="compact"
@@ -236,9 +236,7 @@ export default function Home() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleAddSite}>
-            Save
-          </Button>
+          <Button variant="contained" onClick={handleAddSite}>Save</Button>
         </DialogActions>
       </Dialog>
     </Box>
