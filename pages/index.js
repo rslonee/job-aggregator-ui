@@ -1,7 +1,8 @@
 // pages/index.js
 
 import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react'
+import { useRouter } from 'next/router'
 import { DataGrid } from '@mui/x-data-grid'
 import {
   Box,
@@ -16,6 +17,10 @@ import {
 } from '@mui/material'
 
 export default function Home() {
+  const session = useSession()
+  const supabase = useSupabaseClient()
+  const router = useRouter()
+
   const [jobs, setJobs] = useState([])
   const [open, setOpen] = useState(false)
   const [siteName, setSiteName] = useState('')
@@ -23,9 +28,19 @@ export default function Home() {
   const [scraperType, setScraperType] = useState('workday')
   const [baseUrl, setBaseUrl] = useState('')
 
+  // Redirect if not authenticated, fetch jobs once session is ready
   useEffect(() => {
-    fetchJobs()
-  }, [])
+    if (session === null) {
+      router.replace('/login')
+    } else if (session) {
+      fetchJobs()
+    }
+  }, [session])
+
+  // While Supabase is checking session status
+  if (session === undefined) {
+    return <div>Loading...</div>
+  }
 
   // Fetch only non-applied, non-rejected jobs
   async function fetchJobs() {
@@ -34,42 +49,57 @@ export default function Home() {
       .select('id, title, company, location, date_posted, url')
       .eq('applied', false)
       .eq('rejected', false)
-    if (error) console.error('Error fetching jobs:', error)
-    else setJobs(data || [])
+    if (error) {
+      console.error('Error fetching jobs:', error)
+    } else {
+      setJobs(data || [])
+    }
   }
 
-  // Flag as applied
+  // Mark as applied
   async function handleMarkApplied(id) {
     const { error } = await supabase
       .from('jobs')
       .update({ applied: true })
       .eq('id', id)
-    if (!error) setJobs(prev => prev.filter(job => job.id !== id))
+    if (!error) {
+      setJobs(prev => prev.filter(job => job.id !== id))
+    }
   }
 
-  // Flag as rejected
+  // Mark as rejected
   async function handleMarkRejected(id) {
     const { error } = await supabase
       .from('jobs')
       .update({ rejected: true })
       .eq('id', id)
-    if (!error) setJobs(prev => prev.filter(job => job.id !== id))
-  }
-
-  // Add new site (unchanged)
-  async function handleAddSite() {
-    const { error } = await supabase.from('sites').insert({
-      name: siteName,
-      url: siteUrl,
-      scraper_type: scraperType,
-      base_url: baseUrl
-    })
     if (!error) {
-      setOpen(false)
-      setSiteName(''); setSiteUrl(''); setScraperType('workday'); setBaseUrl('')
+      setJobs(prev => prev.filter(job => job.id !== id))
     }
   }
 
+  // Add a new site to scrape
+  async function handleAddSite() {
+    const { error } = await supabase
+      .from('sites')
+      .insert({
+        name: siteName,
+        url: siteUrl,
+        scraper_type: scraperType,
+        base_url: baseUrl
+      })
+    if (error) {
+      console.error('Error adding site:', error)
+    } else {
+      setOpen(false)
+      setSiteName('')
+      setSiteUrl('')
+      setScraperType('workday')
+      setBaseUrl('')
+    }
+  }
+
+  // Column definitions for DataGrid
   const columns = [
     {
       field: 'title',
@@ -81,7 +111,7 @@ export default function Home() {
         </a>
       )
     },
-    { field: 'company',  headerName: 'Company',  flex: 1 },
+    { field: 'company', headerName: 'Company', flex: 1 },
     { field: 'location', headerName: 'Location', flex: 1 },
     {
       field: 'date_posted',
@@ -119,7 +149,7 @@ export default function Home() {
 
   return (
     <Box sx={{ height: '100vh', p: 2, display: 'flex', flexDirection: 'column' }}>
-      {/* Header */}
+      {/* Header with Sign Out */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
         <Typography variant="h4">Live Job Feed</Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -127,10 +157,19 @@ export default function Home() {
           <Button variant="contained" onClick={() => setOpen(true)}>
             Add Site
           </Button>
+          <Button
+            variant="outlined"
+            onClick={async () => {
+              await supabase.auth.signOut()
+              router.push('/login')
+            }}
+          >
+            Sign Out
+          </Button>
         </Box>
       </Box>
 
-      {/* DataGrid with your customizations */}
+      {/* Job table */}
       <Box sx={{ flexGrow: 1 }}>
         <DataGrid
           rows={jobs}
