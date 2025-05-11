@@ -1,12 +1,10 @@
-// pages/_app.js
-
 import '../styles/globals.css'
-import { createBrowserSupabaseClient } from '@supabase/auth-helpers-nextjs'
 import { SessionContextProvider } from '@supabase/auth-helpers-react'
+import { createPagesBrowserClient } from '@supabase/auth-helpers-nextjs'
 
 export default function App({ Component, pageProps }) {
-  // Create a Supabase client with the Next.js auth helpers
-  const supabase = createBrowserSupabaseClient()
+  // Use createPagesBrowserClient for client-only pages
+  const supabase = createPagesBrowserClient()
 
   return (
     <SessionContextProvider
