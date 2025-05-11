@@ -1,7 +1,7 @@
 // pages/index.js
 
 import { useEffect, useState } from 'react'
-import { useSession, useSupabaseClient } from '@supabase/ssr/react'
+import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react'
 import { useRouter } from 'next/router'
 import { DataGrid } from '@mui/x-data-grid'
 import {
@@ -28,7 +28,7 @@ export default function Home() {
   const [scraperType, setScraperType] = useState('workday')
   const [baseUrl, setBaseUrl] = useState('')
 
-  // Redirect to login if not authenticated; otherwise fetch jobs
+  // Redirect to /login if not authenticated
   useEffect(() => {
     if (session === null) {
       router.replace('/login')
@@ -37,11 +37,11 @@ export default function Home() {
     }
   }, [session])
 
-  // While checking session
+  // While Next checks session
   if (session === undefined) {
-    return <div>Loading...</div>
+    return <div>Loading…</div>
   }
-  // If no session, render nothing (redirect happens)
+  // If no session, render nothing (redirecting)
   if (!session) {
     return null
   }
@@ -53,11 +53,8 @@ export default function Home() {
       .select('id, title, company, location, date_posted, url')
       .eq('applied', false)
       .eq('rejected', false)
-    if (error) {
-      console.error('Error fetching jobs:', error)
-    } else {
-      setJobs(data || [])
-    }
+    if (error) console.error('Error fetching jobs:', error)
+    else setJobs(data || [])
   }
 
   // Flag a job as applied
@@ -66,9 +63,7 @@ export default function Home() {
       .from('jobs')
       .update({ applied: true })
       .eq('id', id)
-    if (!error) {
-      setJobs(prev => prev.filter(job => job.id !== id))
-    }
+    if (!error) setJobs(prev => prev.filter(job => job.id !== id))
   }
 
   // Flag a job as rejected
@@ -77,9 +72,7 @@ export default function Home() {
       .from('jobs')
       .update({ rejected: true })
       .eq('id', id)
-    if (!error) {
-      setJobs(prev => prev.filter(job => job.id !== id))
-    }
+    if (!error) setJobs(prev => prev.filter(job => job.id !== id))
   }
 
   // Add a new site
@@ -92,9 +85,8 @@ export default function Home() {
         scraper_type: scraperType,
         base_url: baseUrl
       })
-    if (error) {
-      console.error('Error adding site:', error)
-    } else {
+    if (error) console.error('Error adding site:', error)
+    else {
       setOpen(false)
       setSiteName('')
       setSiteUrl('')
@@ -114,7 +106,7 @@ export default function Home() {
         </a>
       )
     },
-    { field: 'company', headerName: 'Company', flex: 1 },
+    { field: 'company',  headerName: 'Company', flex: 1 },
     { field: 'location', headerName: 'Location', flex: 1 },
     {
       field: 'date_posted',
@@ -152,7 +144,7 @@ export default function Home() {
 
   return (
     <Box sx={{ height: '100vh', p: 2, display: 'flex', flexDirection: 'column' }}>
-      {/* Header with counter, Add Site, and Sign Out */}
+      {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
         <Typography variant="h4">Live Job Feed</Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -172,7 +164,7 @@ export default function Home() {
         </Box>
       </Box>
 
-      {/* Job table */}
+      {/* DataGrid */}
       <Box sx={{ flexGrow: 1 }}>
         <DataGrid
           rows={jobs}
