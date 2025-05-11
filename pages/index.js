@@ -27,14 +27,47 @@ export default function Home() {
     fetchJobs()
   }, [])
 
+  // Fetch only non-applied, non-rejected jobs
   async function fetchJobs() {
     const { data, error } = await supabase
       .from('jobs')
       .select('id, title, company, location, date_posted, url')
-    if (error) console.error('Error fetching jobs:', error)
-    else setJobs(data || [])
+      .eq('applied', false)
+      .eq('rejected', false)
+    if (error) {
+      console.error('Error fetching jobs:', error)
+    } else {
+      setJobs(data || [])
+    }
   }
 
+  // Mark a job as applied → remove from UI
+  async function handleMarkApplied(id) {
+    const { error } = await supabase
+      .from('jobs')
+      .update({ applied: true })
+      .eq('id', id)
+    if (error) {
+      console.error('Error marking applied:', error)
+    } else {
+      setJobs(prev => prev.filter(job => job.id !== id))
+    }
+  }
+
+  // Mark a job as rejected → remove from UI
+  async function handleMarkRejected(id) {
+    const { error } = await supabase
+      .from('jobs')
+      .update({ rejected: true })
+      .eq('id', id)
+    if (error) {
+      console.error('Error marking rejected:', error)
+    } else {
+      setJobs(prev => prev.filter(job => job.id !== id))
+    }
+  }
+
+  // Insert a new site (same as before)
   async function handleAddSite() {
     const { error } = await supabase.from('sites').insert({
       name: siteName,
@@ -42,14 +75,10 @@ export default function Home() {
       scraper_type: scraperType,
       base_url: baseUrl
     })
-    if (error) {
-      console.error('Error adding site:', error)
-    } else {
+    if (error) console.error('Error adding site:', error)
+    else {
       setOpen(false)
-      setSiteName('')
-      setSiteUrl('')
-      setScraperType('workday')
-      setBaseUrl('')
+      setSiteName(''); setSiteUrl(''); setScraperType('workday'); setBaseUrl('')
     }
   }
 
@@ -72,6 +101,31 @@ export default function Home() {
       flex: 1,
       type: 'date',
       valueGetter: ({ value }) => new Date(value)
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      flex: 1,
+      sortable: false,
+      filterable: false,
+      renderCell: ({ row }) => (
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={() => handleMarkApplied(row.id)}
+          >
+            Applied
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => handleMarkRejected(row.id)}
+          >
+            Reject
+          </Button>
+        </Box>
+      )
     }
   ]
 
@@ -113,7 +167,7 @@ export default function Home() {
         />
       </Box>
 
-      {/* Add Site dialog */}
+      {/* Add Site dialog (unchanged) */}
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>Add New Site</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
@@ -150,9 +204,7 @@ export default function Home() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleAddSite}>
-            Save
-          </Button>
+          <Button variant="contained" onClick={handleAddSite}>Save</Button>
         </DialogActions>
       </Dialog>
     </Box>
