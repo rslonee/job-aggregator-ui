@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { DataGrid, GridToolbar } from '@mui/x-data-grid'
+import { DataGrid } from '@mui/x-data-grid'
 import {
   Box,
   Typography,
@@ -34,40 +34,29 @@ export default function Home() {
       .select('id, title, company, location, date_posted, url')
       .eq('applied', false)
       .eq('rejected', false)
-    if (error) {
-      console.error('Error fetching jobs:', error)
-    } else {
-      setJobs(data || [])
-    }
+    if (error) console.error('Error fetching jobs:', error)
+    else setJobs(data || [])
   }
 
-  // Mark a job as applied → remove from UI
+  // Flag as applied
   async function handleMarkApplied(id) {
     const { error } = await supabase
       .from('jobs')
       .update({ applied: true })
       .eq('id', id)
-    if (error) {
-      console.error('Error marking applied:', error)
-    } else {
-      setJobs(prev => prev.filter(job => job.id !== id))
-    }
+    if (!error) setJobs(prev => prev.filter(job => job.id !== id))
   }
 
-  // Mark a job as rejected → remove from UI
+  // Flag as rejected
   async function handleMarkRejected(id) {
     const { error } = await supabase
       .from('jobs')
       .update({ rejected: true })
       .eq('id', id)
-    if (error) {
-      console.error('Error marking rejected:', error)
-    } else {
-      setJobs(prev => prev.filter(job => job.id !== id))
-    }
+    if (!error) setJobs(prev => prev.filter(job => job.id !== id))
   }
 
-  // Insert a new site (same as before)
+  // Add new site (unchanged)
   async function handleAddSite() {
     const { error } = await supabase.from('sites').insert({
       name: siteName,
@@ -75,8 +64,7 @@ export default function Home() {
       scraper_type: scraperType,
       base_url: baseUrl
     })
-    if (error) console.error('Error adding site:', error)
-    else {
+    if (!error) {
       setOpen(false)
       setSiteName(''); setSiteUrl(''); setScraperType('workday'); setBaseUrl('')
     }
@@ -93,7 +81,7 @@ export default function Home() {
         </a>
       )
     },
-    { field: 'company', headerName: 'Company', flex: 1 },
+    { field: 'company',  headerName: 'Company',  flex: 1 },
     { field: 'location', headerName: 'Location', flex: 1 },
     {
       field: 'date_posted',
@@ -142,32 +130,37 @@ export default function Home() {
         </Box>
       </Box>
 
-      {/* Job table */}
+      {/* DataGrid with your customizations */}
       <Box sx={{ flexGrow: 1 }}>
         <DataGrid
           rows={jobs}
           columns={columns}
-          pageSize={25}
-          rowsPerPageOptions={[25, 50, 100]}
+          pageSize={100}
+          rowsPerPageOptions={[
+            100,
+            { value: jobs.length, label: 'All' }
+          ]}
+          pagination
           disableSelectionOnClick
+          density="compact"
           initialState={{
             sorting: {
               sortModel: [{ field: 'date_posted', sort: 'desc' }]
             }
           }}
-          sortingOrder={['desc', 'asc']}
-          filterMode="client"
-          components={{ Toolbar: GridToolbar }}
           sx={{
             border: 0,
             '& .MuiDataGrid-columnHeaders': {
               backgroundColor: '#f5f5f5'
+            },
+            '& .MuiDataGrid-row:nth-of-type(even)': {
+              backgroundColor: '#fafafa'
             }
           }}
         />
       </Box>
 
-      {/* Add Site dialog (unchanged) */}
+      {/* Add Site Dialog */}
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>Add New Site</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
@@ -204,7 +197,9 @@ export default function Home() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleAddSite}>Save</Button>
+          <Button variant="contained" onClick={handleAddSite}>
+            Save
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
