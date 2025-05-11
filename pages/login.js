@@ -1,20 +1,27 @@
 import { useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
-import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
-import { useSupabaseClient, useSession } from '@supabase/auth-helpers-react'
+import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react'
+
+// Dynamically load the Auth UI on the client only
+const Auth = dynamic(
+  () => import('@supabase/auth-ui-react').then(mod => mod.Auth),
+  { ssr: false }
+)
 
 export default function Login() {
   const supabase = useSupabaseClient()
   const session = useSession()
   const router = useRouter()
 
-  // If already logged in, redirect home
+  // Redirect to home once logged in
   useEffect(() => {
-    if (session) {
-      router.replace('/')
-    }
+    if (session) router.replace('/')
   }, [session, router])
+
+  // Prevent SSG errors by rendering nothing on the server
+  if (typeof window === 'undefined') return null
 
   return (
     <div
@@ -30,7 +37,7 @@ export default function Login() {
         supabaseClient={supabase}
         appearance={{ theme: ThemeSupa }}
         providers={['github']}
-        redirectTo={typeof window !== 'undefined' ? window.location.origin : undefined}
+        redirectTo={window.location.origin}
       />
     </div>
   )
