@@ -1,10 +1,9 @@
 // pages/_app.js
-import { createBrowserSupabaseClient } from '@supabase/auth-helpers-nextjs'
-import { SessionContextProvider }    from '@supabase/auth-helpers-react'
-import '../styles/globals.css'
+import { SessionContextProvider } from '@supabase/ssr/react'
+import { createBrowserSupabase }    from '../utils/supabase/browser'
 
-export default function MyApp({ Component, pageProps }) {
-  const supabase = createBrowserSupabaseClient()
+export default function App({ Component, pageProps }) {
+  const supabase = createBrowserSupabase()
 
   return (
     <SessionContextProvider
