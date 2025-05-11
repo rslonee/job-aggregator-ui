@@ -1,19 +1,13 @@
 // pages/login.js
-import { Auth } from '@supabase/auth-ui-react'
-import { ThemeSupa } from '@supabase/auth-ui-shared'
-import { useSupabaseClient } from '@supabase/auth-helpers-react'
+import { Auth } from '@supabase/ssr-auth-ui'
+import { createBrowserSupabase } from '../utils/supabase/browser'
+
+const supabase = createBrowserSupabase()
 
 export default function Login() {
-  const supabase = useSupabaseClient()
-
   return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh' }}>
-      <Auth
-        supabaseClient={supabase}
-        appearance={{ theme: ThemeSupa }}
-        providers={[]}
-        magicLink={true}
-      />
+    <div style={{ display:'flex',justifyContent:'center',alignItems:'center',height:'100vh' }}>
+      <Auth supabaseClient={supabase} />
     </div>
   )
 }
