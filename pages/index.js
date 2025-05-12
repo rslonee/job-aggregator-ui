@@ -1,19 +1,19 @@
 // pages/index.js
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/router'
 import { useSupabaseClient } from '@supabase/auth-helpers-react'
 import { DataGrid } from '@mui/x-data-grid'
-import { Box, Typography, Button } from '@mui/material'
+import { Box, Typography, Button, Dialog, DialogTitle, DialogContent, TextField, DialogActions } from '@mui/material'
 import Sidebar from '../components/Sidebar'
 
 export default function Home() {
   const supabase = useSupabaseClient()
-  const router = useRouter()
 
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
+  const [collapsed, setCollapsed] = useState(false)
+  const [addOpen, setAddOpen] = useState(false)
+  const [newSite, setNewSite] = useState('')
 
-  // Fetch jobs
   useEffect(() => {
     async function loadJobs() {
       setLoading(true)
@@ -28,60 +28,61 @@ export default function Home() {
   }, [supabase])
 
   const handleStatusUpdate = async (id, status) => {
-    await supabase
-      .from('jobs')
-      .update({ status })
-      .eq('id', id)
-    setJobs(jobs.map(j => j.id === id ? { ...j, status } : j))
+    await supabase.from('jobs').update({ status }).eq('id', id)
+    setJobs(prev => prev.filter(j => j.id !== id))
+  }
+
+  const handleToggle = () => setCollapsed(c => !c)
+  const handleAddSite = () => setAddOpen(true)
+  const handleAddSave = async () => {
+    if (newSite) {
+      await supabase.from('sites').insert({ url: newSite })
+      setNewSite('')
+      setAddOpen(false)
+    }
   }
 
   const columns = [
-    { field: 'title', headerName: 'Title', flex: 2 },
+    { field: 'title', headerName: 'Title', flex: 2, renderCell: params => (
+      <a href={params.row.url} target="_blank" rel="noopener noreferrer">{params.value}</a>
+    )},
     { field: 'company', headerName: 'Company', flex: 1 },
     { field: 'location', headerName: 'Location', flex: 1 },
-    {
-      field: 'actions', headerName: 'Status', flex: 1, renderCell: params => (
-        <>
-          <Button
-            size="small"
-            variant={params.row.status === 'applied' ? 'contained' : 'outlined'}
-            onClick={() => handleStatusUpdate(params.row.id, 'applied')}
-            sx={{ mr: 1 }}
-          >Applied</Button>
-          <Button
-            size="small"
-            variant={params.row.status === 'rejected' ? 'contained' : 'outlined'}
-            color="error"
-            onClick={() => handleStatusUpdate(params.row.id, 'rejected')}
-          >Rejected</Button>
-        </>
-      )
-    },
+    { field: 'date_posted', headerName: 'Date Posted', flex: 1, type: 'date', valueGetter: ({ value }) => new Date(value) },
+    { field: 'actions', headerName: 'Actions', flex: 1, renderCell: params => (
+      <>
+        <Button size="small" variant="outlined" onClick={() => handleStatusUpdate(params.row.id, 'applied')} sx={{ mr: 1 }}>Applied</Button>
+        <Button size="small" variant="outlined" color="error" onClick={() => handleStatusUpdate(params.row.id, 'rejected')}>Rejected</Button>
+      </>
+    )}
   ]
-
-  const handleAddSite = () => {
-    // existing add-site logic or open modal
-    console.log('Add site clicked')
-  }
 
   return (
     <Box sx={{ display: 'flex' }}>
-      <Sidebar onAddSite={handleAddSite} />
+      <Sidebar collapsed={collapsed} onToggle={handleToggle} onAddSite={handleAddSite} />
       <Box sx={{ flexGrow: 1, p: 2, height: '100vh' }}>
-        <Typography variant="h5" gutterBottom>
-          Jobs ({jobs.length})
-        </Typography>
-        <DataGrid
-          rows={jobs}
-          columns={columns}
-          getRowId={row => row.id}
-          loading={loading}
-          pageSize={100}
-          rowsPerPageOptions={[100]}
-          disableColumnMenu
-          disableSelectionOnClick
-        />
+        <Typography variant="h5" gutterBottom>Jobs ({jobs.length})</Typography>
+        <DataGrid rows={jobs} columns={columns} getRowId={r => r.id} loading={loading} pageSize={100}
+          rowsPerPageOptions={[100]} disableColumnMenu disableSelectionOnClick />
       </Box>
+
+      <Dialog open={addOpen} onClose={() => setAddOpen(false)}>
+        <DialogTitle>Add Site</DialogTitle>
+        <DialogContent>
+          <TextField
+            margin="dense"
+            label="Site URL"
+            type="url"
+            fullWidth
+            value={newSite}
+            onChange={e => setNewSite(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddOpen(false)}>Cancel</Button>
+          <Button onClick={handleAddSave} variant="contained">Save</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }
