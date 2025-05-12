@@ -17,14 +17,10 @@ export default function StatusPage() {
       setLoading(true)
       const { data, error } = await supabase
         .from('jobs')
-        .select('id,title,company,location,date_posted,status') // include status
-        .in('status', ['applied', 'rejected'])
+        .select('id,title,company,location,date_posted,applied,reviewed')
+        .or('applied.eq.true,reviewed.eq.true')
         .order('date_posted', { ascending: false })
-      if (error) {
-        console.error('Failed to load statuses:', error)
-      } else {
-        setJobs(data)
-      }
+      if (!error) setJobs(data)
       setLoading(false)
     }
     loadByStatus()
@@ -52,7 +48,8 @@ export default function StatusPage() {
       type: 'date',
       valueGetter: ({ value }) => new Date(value),
     },
-    { field: 'status', headerName: 'Status', flex: 1 }, // show status
+    { field: 'applied', headerName: 'Applied', flex: 1, type: 'boolean' },
+    { field: 'reviewed', headerName: 'Rejected', flex: 1, type: 'boolean' },
   ]
 
   return (
@@ -65,7 +62,7 @@ export default function StatusPage() {
         <DataGrid
           rows={jobs}
           columns={columns}
-          getRowId={(row) => row.id}
+          getRowId={(r) => r.id}
           loading={loading}
           pageSize={100}
           rowsPerPageOptions={[100]}
