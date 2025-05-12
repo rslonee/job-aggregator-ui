@@ -2,38 +2,22 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
-import {
-  useSession,
-  useSupabaseClient,
-} from '@supabase/auth-helpers-react'
+import { useSupabaseClient } from '@supabase/auth-helpers-react'
 import { DataGrid } from '@mui/x-data-grid'
 import { Button, Box, Typography } from '@mui/material'
 
 export default function Home() {
-  const session = useSession()
   const supabase = useSupabaseClient()
   const router = useRouter()
-
-  // Redirect to /login if not authenticated
-  useEffect(() => {
-    if (session === null) {
-      router.replace('/login')
-    }
-  }, [session, router])
-
-  // While we’re checking session, don’t flash UI
-  if (!session) {
-    return null
-  }
 
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // Fetch jobs from your Supabase table once session is ready
+  // Fetch jobs once on mount
   useEffect(() => {
     async function loadJobs() {
       setLoading(true)
-      let { data, error } = await supabase
+      const { data, error } = await supabase
         .from('jobs')
         .select('id,title,company,location,date_posted,url')
         .order('date_posted', { ascending: false })
@@ -43,13 +27,13 @@ export default function Home() {
     loadJobs()
   }, [supabase])
 
-  // Sign out button
+  // Sign-out simply reloads (Basic-Auth will re-prompt)
   const handleSignOut = async () => {
     await supabase.auth.signOut()
-    router.replace('/login')
+    router.reload()
   }
 
-  // Define columns for the DataGrid
+  // Define columns for the data grid
   const columns = [
     {
       field: 'title',
@@ -80,10 +64,10 @@ export default function Home() {
     <Box sx={{ height: '100vh', p: 2 }}>
       <Box
         sx={{
-          display:      'flex',
+          display: 'flex',
           justifyContent: 'space-between',
-          alignItems:   'center',
-          mb:           2,
+          alignItems: 'center',
+          mb: 2,
         }}
       >
         <Typography variant="h5">
