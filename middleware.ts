@@ -1,22 +1,19 @@
+// middleware.ts
+
 import { NextRequest, NextResponse } from 'next/server'
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
+import { createMiddlewareClient } from '@supabase/ssr'
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
+
+  // This will read/set the Supabase auth cookie
   const supabase = createMiddlewareClient({ req, res })
-
-  const {
-    data: { session }
-  } = await supabase.auth.getSession()
-
-  if (!session) {
-    const loginUrl = new URL('/login', req.url)
-    return NextResponse.redirect(loginUrl)
-  }
+  await supabase.auth.getSession()
 
   return res
 }
 
+// (Optional) apply to all routes except static assets
 export const config = {
-  matcher: '/((?!_next/static|_next/image|favicon.ico|api|login).*)'
+  matcher: ['/((?!_next/static).*)'],
 }
