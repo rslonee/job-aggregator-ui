@@ -1,22 +1,24 @@
 // pages/_app.js
 
-import { useRef } from 'react'
-import { SessionContextProvider, createPagesBrowserClient } from '@supabase/ssr'
+import { useState } from 'react'
+import { createBrowserSupabaseClient } from '@supabase/auth-helpers-nextjs'
+import { SessionContextProvider } from '@supabase/auth-helpers-react'
 import '../styles/globals.css'
 
-export default function MyApp({ Component, pageProps }) {
-  // Create the Supabase client once per session
-  const supabase = useRef()
-  if (!supabase.current) {
-    supabase.current = createPagesBrowserClient()
-  }
+function MyApp({ Component, pageProps }) {
+  // on first render, make sure we only create the client once
+  const [supabaseClient] = useState(() =>
+    createBrowserSupabaseClient()
+  )
 
   return (
     <SessionContextProvider
-      supabaseClient={supabase.current}
+      supabaseClient={supabaseClient}
       initialSession={pageProps.initialSession}
     >
       <Component {...pageProps} />
     </SessionContextProvider>
   )
 }
+
+export default MyApp
