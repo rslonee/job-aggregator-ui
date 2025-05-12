@@ -38,8 +38,8 @@ export default function Login() {
         supabaseClient={supabase}
         appearance={{ theme: ThemeSupa }}
         providers={['github']}
-        // **point at the new Next.js API callback**
-        redirectTo={`${APP}/api/auth/callback`}
+        // redirect to your homepage instead of the callback route
+        redirectTo={`${APP}/`}
       />
     </div>
   )
