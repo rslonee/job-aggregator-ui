@@ -1,14 +1,19 @@
-import '../styles/globals.css'
-import { SessionContextProvider } from '@supabase/auth-helpers-react'
-import { createPagesBrowserClient } from '@supabase/auth-helpers-nextjs'
+// pages/_app.js
 
-export default function App({ Component, pageProps }) {
-  // Use createPagesBrowserClient for client-only pages
-  const supabase = createPagesBrowserClient()
+import { useRef } from 'react'
+import { SessionContextProvider, createPagesBrowserClient } from '@supabase/ssr'
+import '../styles/globals.css'
+
+export default function MyApp({ Component, pageProps }) {
+  // Create the Supabase client once per session
+  const supabase = useRef()
+  if (!supabase.current) {
+    supabase.current = createPagesBrowserClient()
+  }
 
   return (
     <SessionContextProvider
-      supabaseClient={supabase}
+      supabaseClient={supabase.current}
       initialSession={pageProps.initialSession}
     >
       <Component {...pageProps} />
