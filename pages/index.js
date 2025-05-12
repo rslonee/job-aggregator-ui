@@ -1,7 +1,10 @@
 // pages/index.js
 import { useEffect, useState } from 'react'
 import { useSupabaseClient } from '@supabase/auth-helpers-react'
-import { DataGrid } from '@mui/x-data-grid'
+import {
+  DataGrid,
+  GridToolbar
+} from '@mui/x-data-grid'
 import { Box, Typography, Button } from '@mui/material'
 import Sidebar from '../components/Sidebar'
 import AddSiteModal from '../components/AddSiteModal'
@@ -32,7 +35,7 @@ export default function Home() {
       .from('jobs')
       .update({ applied: isApplied, rejected: !isApplied })
       .eq('id', id)
-    setJobs(j => j.filter(x => x.id !== id))
+    setJobs(jobs => jobs.filter(x => x.id !== id))
   }
 
   const rejectOld = async () => {
@@ -50,19 +53,28 @@ export default function Home() {
 
   const columns = [
     {
-      field: 'title', headerName: 'Title', flex: 2,
+      field: 'title',
+      headerName: 'Title',
+      flex: 2,
       renderCell: ({ row }) => (
-        <a href={row.url} target="_blank" rel="noopener">{row.title}</a>
+        <a href={row.url} target="_blank" rel="noopener noreferrer">
+          {row.title}
+        </a>
       ),
     },
     { field: 'company', headerName: 'Company', flex: 1 },
     { field: 'location', headerName: 'Location', flex: 1 },
     {
-      field: 'date_posted', headerName: 'Posted', type: 'date',
-      valueGetter: ({ value }) => new Date(value), flex: 1
+      field: 'date_posted',
+      headerName: 'Posted',
+      type: 'date',
+      valueGetter: ({ value }) => new Date(value),
+      flex: 1
     },
     {
-      field: 'actions', headerName: 'Actions', flex: 1,
+      field: 'actions',
+      headerName: 'Actions',
+      flex: 1,
       renderCell: ({ row }) => (
         <>
           <Button size="small" onClick={() => mark(row.id, true)}>Applied</Button>
@@ -73,39 +85,66 @@ export default function Home() {
   ]
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(c => !c)} />
-      <Box sx={{ flexGrow: 1, p: 2 }}>
+    <Box sx={{ display: 'flex', height: '100%' }}>
+      <Sidebar
+        collapsed={collapsed}
+        onToggle={() => setCollapsed(c => !c)}
+      />
+
+      <Box
+        sx={{
+          flexGrow: 1,
+          p: 1,
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
         <Box
           sx={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 1,
           }}
         >
-          <Typography variant="h5">New Jobs ({jobs.length})</Typography>
-          <Box>
-            <Button variant="outlined" sx={{ mr: 1 }} onClick={rejectOld}>
+          <Typography variant="h6">New Jobs ({jobs.length})</Typography>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Button variant="outlined" size="small" onClick={rejectOld}>
               Reject 30+ Days
             </Button>
-            <Button variant="contained" onClick={() => setModalOpen(true)}>
+            <Button variant="contained" size="small" onClick={() => setModalOpen(true)}>
               Add Site
             </Button>
           </Box>
         </Box>
 
-        <DataGrid
-          rows={jobs}
-          columns={columns}
-          getRowId={r => r.id}
-          loading={loading}
-          pageSize={50}
-          rowsPerPageOptions={[50]}
-          autoHeight
-          disableSelectionOnClick
-          sortingOrder={['desc','asc']}
-          initialState={{
-            sorting: { sortingModel: [{ field: 'date_posted', sort: 'desc' }] }
-          }}
-        />
+        <Box sx={{ flexGrow: 1 }}>
+          <DataGrid
+            rows={jobs}
+            columns={columns}
+            getRowId={r => r.id}
+            loading={loading}
+            density="compact"
+            autoHeight
+            pageSize={50}
+            rowsPerPageOptions={[50]}
+            disableSelectionOnClick
+            sortingOrder={['desc','asc']}
+            initialState={{
+              sorting: { sortingModel: [{ field: 'date_posted', sort: 'desc' }] },
+            }}
+            components={{ Toolbar: GridToolbar }}
+            componentsProps={{
+              toolbar: { showQuickFilter: true, quickFilterProps: { debounceMs: 200 } }
+            }}
+            sx={{
+              '& .MuiDataGrid-row:nth-of-type(odd)': {
+                backgroundColor: 'rgba(0, 0, 0, 0.02)',
+              },
+            }}
+          />
+        </Box>
 
         <AddSiteModal open={modalOpen} onClose={() => setModalOpen(false)} />
       </Box>
