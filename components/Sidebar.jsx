@@ -1,5 +1,3 @@
-// components/Sidebar.jsx
-import { useState } from 'react'
 import { Box, List, ListItemButton, ListItemText, Divider } from '@mui/material'
 import HomeIcon from '@mui/icons-material/Home'
 import AddIcon from '@mui/icons-material/Add'
