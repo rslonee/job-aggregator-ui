@@ -15,7 +15,7 @@ export default function Home() {
   const [addOpen, setAddOpen] = useState(false)
   const [newSite, setNewSite] = useState('')
 
-  // Fetch only jobs that have not yet been acted on
+  // 1) Home page: fetch only jobs where both flags are false
   useEffect(() => {
     async function loadJobs() {
       setLoading(true)
@@ -31,7 +31,7 @@ export default function Home() {
     loadJobs()
   }, [supabase])
 
-  // Mark a job as applied or reviewed
+  // Update the boolean flags and remove the row locally
   const handleStatusUpdate = async (id, isApplied) => {
     await supabase
       .from('jobs')
@@ -40,8 +40,6 @@ export default function Home() {
         reviewed: !isApplied,
       })
       .eq('id', id)
-
-    // remove from list immediately
     setJobs((prev) => prev.filter((j) => j.id !== id))
   }
 
@@ -95,7 +93,7 @@ export default function Home() {
             color="error"
             onClick={() => handleStatusUpdate(params.row.id, false)}
           >
-            Rejected
+            Reviewed
           </Button>
         </>
       ),
