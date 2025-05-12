@@ -39,4 +39,5 @@ export default function Sidebar({ collapsed, onToggle, onAddSite }) {
         )}
       </List>
     </Box>
+  )
 }
