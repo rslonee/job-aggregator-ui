@@ -1,14 +1,12 @@
 // pages/index.js
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/router'
 import { useSupabaseClient } from '@supabase/auth-helpers-react'
 import { DataGrid } from '@mui/x-data-grid'
-import { Button, Box, Typography } from '@mui/material'
+import { Box, Typography } from '@mui/material'
 
 export default function Home() {
   const supabase = useSupabaseClient()
-  const router = useRouter()
 
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
@@ -26,12 +24,6 @@ export default function Home() {
     }
     loadJobs()
   }, [supabase])
-
-  // Sign-out simply reloads (Basic-Auth will re-prompt)
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.reload()
-  }
 
   // Define columns for the data grid
   const columns = [
@@ -64,18 +56,15 @@ export default function Home() {
     <Box sx={{ height: '100vh', p: 2 }}>
       <Box
         sx={{
-          display: 'flex',
+          display:      'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 2,
+          alignItems:   'center',
+          mb:           2,
         }}
       >
         <Typography variant="h5">
           Jobs ({jobs.length})
         </Typography>
-        <Button variant="outlined" onClick={handleSignOut}>
-          Sign Out
-        </Button>
       </Box>
 
       <DataGrid
