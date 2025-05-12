@@ -12,12 +12,13 @@ export default function StatusPage() {
   const [loading, setLoading] = useState(true)
   const [collapsed, setCollapsed] = useState(false)
 
+  // 2) Status page: fetch jobs where either flag is true
   useEffect(() => {
     async function loadByStatus() {
       setLoading(true)
       const { data, error } = await supabase
         .from('jobs')
-        .select('id,title,company,location,date_posted,applied,reviewed')
+        .select('id,title,company,location,date_posted,applied,reviewed,url')
         .or('applied.eq.true,reviewed.eq.true')
         .order('date_posted', { ascending: false })
       if (!error) setJobs(data)
@@ -49,7 +50,7 @@ export default function StatusPage() {
       valueGetter: ({ value }) => new Date(value),
     },
     { field: 'applied', headerName: 'Applied', flex: 1, type: 'boolean' },
-    { field: 'reviewed', headerName: 'Rejected', flex: 1, type: 'boolean' },
+    { field: 'reviewed', headerName: 'Reviewed', flex: 1, type: 'boolean' },
   ]
 
   return (
@@ -57,7 +58,7 @@ export default function StatusPage() {
       <Sidebar collapsed={collapsed} onToggle={handleToggle} onAddSite={() => {}} />
       <Box sx={{ flexGrow: 1, p: 2, height: '100vh' }}>
         <Typography variant="h5" gutterBottom>
-          Applied & Rejected Jobs
+          Applied & Reviewed Jobs
         </Typography>
         <DataGrid
           rows={jobs}
