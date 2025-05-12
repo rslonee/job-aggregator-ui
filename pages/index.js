@@ -3,74 +3,57 @@
 import { useEffect, useState } from 'react'
 import { useSupabaseClient } from '@supabase/auth-helpers-react'
 import { DataGrid } from '@mui/x-data-grid'
-import { Box, Typography, Button, Dialog, DialogTitle, DialogContent, TextField, DialogActions } from '@mui/material'
+import { Box, Typography, Button } from '@mui/material'
 import Sidebar from '../components/Sidebar'
 
 export default function Home() {
   const supabase = useSupabaseClient()
-
-  const [jobs, setJobs] = useState([])
+  const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [collapsed, setCollapsed] = useState(false)
-  const [addOpen, setAddOpen] = useState(false)
-  const [newSite, setNewSite] = useState('')
 
-  // 1) Home page: fetch only jobs where both flags are false
+  // 1) Fetch jobs where neither applied nor reviewed is true
   useEffect(() => {
-    async function loadJobs() {
+    async function fetchJobs() {
       setLoading(true)
       const { data, error } = await supabase
         .from('jobs')
-        .select('*')
-        .eq('applied', false)
-        .eq('reviewed', false)
-        .order('date_posted', { ascending: false })
-      if (!error) setJobs(data)
+        .select('id,site,applied,reviewed,inserted_at')
+        .not('applied', 'eq', true)
+        .not('reviewed', 'eq', true)
+        .order('inserted_at', { ascending: false })
+
+      if (error) console.error(error)
+      else setRows(data)
       setLoading(false)
     }
-    loadJobs()
+    fetchJobs()
   }, [supabase])
 
-  // Update the boolean flags and remove the row locally
-  const handleStatusUpdate = async (id, isApplied) => {
+  const mark = async (id, applied) => {
+    // set one flag true, the other false
     await supabase
       .from('jobs')
-      .update({
-        applied: isApplied,
-        reviewed: !isApplied,
-      })
+      .update({ applied, reviewed: !applied })
       .eq('id', id)
-    setJobs((prev) => prev.filter((j) => j.id !== id))
-  }
-
-  const handleToggle = () => setCollapsed((c) => !c)
-  const handleAddSite = () => setAddOpen(true)
-  const handleAddSave = async () => {
-    if (newSite) {
-      await supabase.from('sites').insert({ url: newSite })
-      setNewSite('')
-      setAddOpen(false)
-    }
+    // remove from this list immediately
+    setRows((prev) => prev.filter((r) => r.id !== id))
   }
 
   const columns = [
     {
-      field: 'title',
-      headerName: 'Title',
-      flex: 2,
-      renderCell: (params) => (
-        <a href={params.row.url} target="_blank" rel="noopener noreferrer">
-          {params.value}
-        </a>
+      field: 'site',
+      headerName: 'Job URL',
+      flex: 3,
+      renderCell: ({ value }) => (
+        <a href={value} target="_blank" rel="noopener noreferrer">{value}</a>
       ),
     },
-    { field: 'company', headerName: 'Company', flex: 1 },
-    { field: 'location', headerName: 'Location', flex: 1 },
     {
-      field: 'date_posted',
-      headerName: 'Date Posted',
+      field: 'inserted_at',
+      headerName: 'Fetched At',
       flex: 1,
-      type: 'date',
+      type: 'dateTime',
       valueGetter: ({ value }) => new Date(value),
     },
     {
@@ -82,7 +65,7 @@ export default function Home() {
           <Button
             size="small"
             variant="outlined"
-            onClick={() => handleStatusUpdate(params.row.id, true)}
+            onClick={() => mark(params.row.id, true)}
             sx={{ mr: 1 }}
           >
             Applied
@@ -91,7 +74,7 @@ export default function Home() {
             size="small"
             variant="outlined"
             color="error"
-            onClick={() => handleStatusUpdate(params.row.id, false)}
+            onClick={() => mark(params.row.id, false)}
           >
             Reviewed
           </Button>
@@ -102,42 +85,22 @@ export default function Home() {
 
   return (
     <Box sx={{ display: 'flex' }}>
-      <Sidebar collapsed={collapsed} onToggle={handleToggle} onAddSite={handleAddSite} />
+      <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(c => !c)} onAddSite={() => { /* your add-site logic */ }} />
       <Box sx={{ flexGrow: 1, p: 2, height: '100vh' }}>
         <Typography variant="h5" gutterBottom>
-          Jobs ({jobs.length})
+          New Jobs ({rows.length})
         </Typography>
         <DataGrid
-          rows={jobs}
+          rows={rows}
           columns={columns}
           getRowId={(r) => r.id}
           loading={loading}
-          pageSize={100}
-          rowsPerPageOptions={[100]}
+          pageSize={50}
+          rowsPerPageOptions={[50]}
           disableColumnMenu
           disableSelectionOnClick
         />
       </Box>
-
-      <Dialog open={addOpen} onClose={() => setAddOpen(false)}>
-        <DialogTitle>Add Site</DialogTitle>
-        <DialogContent>
-          <TextField
-            margin="dense"
-            label="Site URL"
-            type="url"
-            fullWidth
-            value={newSite}
-            onChange={(e) => setNewSite(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAddOpen(false)}>Cancel</Button>
-          <Button onClick={handleAddSave} variant="contained">
-            Save
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   )
 }
